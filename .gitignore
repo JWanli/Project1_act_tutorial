@@ -141,3 +141,44 @@ dmypy.json
 
 ckpt_dir/
 *.ipynb
+
+# Model checkpoints and weights
+models/
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.onnx
+*.pb
+*.tflite
+*.mlmodel
+weights/
+checkpoints/
+saved_models/
+
+# Large data files
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.feather
+*.parquet
+*.hdf5
+*.h5
+
+# Video and image files
+*.mp4
+*.avi
+*.mov
+*.webm
+*.gif
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tif
+*.tiff
+
+# Assets that might be large
+assets/*.STL
+assets/*.stl

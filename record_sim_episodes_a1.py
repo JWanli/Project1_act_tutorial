@@ -30,6 +30,16 @@ def main(args):
     inject_noise = False
     render_cam_name = 'angle'
 
+    # -- 新增 -- #
+    x_min, x_max = 0.0, 0.2
+    y_min, y_max = 0.4, 0.6
+    z0 = 0.05  # z coordinate of the box
+    grid_n = int(np.ceil(np.sqrt(num_episodes)))
+    xs = np.linspace(x_min, x_max, grid_n)
+    ys = np.linspace(y_min, y_max, grid_n)
+    start_pose = [(x,y,z0) for x in xs for y in ys][:num_episodes]
+    # -- 新增 -- #
+
     if not os.path.isdir(dataset_dir):
         os.makedirs(dataset_dir, exist_ok=True)
 
@@ -46,10 +56,18 @@ def main(args):
 
     success = []
     for episode_idx in range(num_episodes):
+        
+        xyz = np.array(start_pose[episode_idx])
+        quat = np.array([1, 0, 0, 0])  # default quaternion
+        sub_pose = np.concatenate([xyz, quat])
+
         print(f'{episode_idx=}')
         print('Rollout out EE space scripted policy')
+
         # setup the environment
         env = make_ee_sim_env(task_name)
+        env.task.start_cube_pose = sub_pose
+
         ts = env.reset()
         episode = [ts]
         policy = policy_cls(inject_noise)
@@ -94,8 +112,9 @@ def main(args):
 
         # setup the environment
         print('Replaying joint commands')
+        BOX_POSE[0] = sub_pose
         env = make_sim_env(task_name)
-        BOX_POSE[0] = subtask_info # make sure the sim_env has the same object configurations as ee_sim_env
+        # BOX_POSE[0] = subtask_info # make sure the sim_env has the same object configurations as ee_sim_env
         ts = env.reset()
 
         episode_replay = [ts]

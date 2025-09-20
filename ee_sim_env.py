@@ -237,6 +237,7 @@ class PickNPlaceEETask(SingleA1EETask):
     def __init__(self, random=None):
         super().__init__(random=random)
         self.max_reward = 3
+        self.start_cube_pose = None
 
     def initialize_episode(self, physics):
         """Sets the state of the environment at the start of each episode."""
@@ -246,7 +247,10 @@ class PickNPlaceEETask(SingleA1EETask):
         box_start_idx = physics.model.name2id('red_box_joint', 'joint')
         np.copyto(physics.data.qpos[box_start_idx : box_start_idx + 7], box_pose)
         # print(f"randomized cube position to {cube_position}")
-
+        if self.start_cube_pose is not None:
+            # if start_cube_pose is set, use it to initialize the box position
+            np.copyto(physics.data.qpos[box_start_idx : box_start_idx + 7], 
+                      self.start_cube_pose)
         super().initialize_episode(physics)
     
     @staticmethod
