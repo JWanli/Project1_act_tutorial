@@ -1,5 +1,7 @@
 # ACT: Action Chunking with Transformers
 
+原地址：[act_tutotial](https://github.com/taozhang1004/act_tutorial)
+
 ### *New*: [ACT tuning tips](https://docs.google.com/document/d/1FVIZfoALXg_ZkYKaYVh-qOlaXveq5CtvJHXkY25eYhs/edit?usp=sharing)
 TL;DR: if your ACT policy is jerky or pauses in the middle of an episode, just train for longer! Success rate and smoothness can improve way after loss plateaus.
 
