@@ -48,12 +48,12 @@ def main(args):
 
     # fixed parameters
     state_dim = 7
-    lr_backbone = 1e-5
+    lr_backbone = args['lr_backbone']  # 原来固定为 1e-5，改为可配
     backbone = args['backbone']
     if policy_class == 'ACT':
-        enc_layers = 4 # ??????????????????????????????
-        dec_layers = 7 # ??????????????????????????????
-        nheads = args['nheads'] # ??????????????????????????????
+        enc_layers = 4
+        dec_layers = 7
+        nheads = args['nheads']
         policy_config = {'lr': args['lr'],
                          'num_queries': args['chunk_size'],
                          'kl_weight': args['kl_weight'],
@@ -65,10 +65,22 @@ def main(args):
                          'dec_layers': dec_layers,
                          'nheads': nheads,
                          'camera_names': camera_names,
+                         # 新增：重建损失及其权重
+                         'recon_loss': args['recon_loss'],
+                         'huber_beta': args['huber_beta'],
+                         'l1_weight': args['l1_weight'],
+                         # 新增：优化器相关
+                         'weight_decay': args['weight_decay'],
+                         'adam_beta1': args['adam_beta1'],
+                         'adam_beta2': args['adam_beta2'],
                          }
     elif policy_class == 'CNNMLP':
         policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
-                         'camera_names': camera_names,}
+                         'camera_names': camera_names,
+                         'weight_decay': args['weight_decay'],
+                         'adam_beta1': args['adam_beta1'],
+                         'adam_beta2': args['adam_beta2'],
+                         }
     else:
         raise NotImplementedError
 
@@ -435,5 +447,13 @@ if __name__ == '__main__':
     parser.add_argument('--temporal_agg', action='store_true')
     parser.add_argument('--backbone', action='store', type=str, help='backbone', default='resnet18',required=False)
     parser.add_argument('--nheads', action='store', type=int, help='nheads', default=8, required=False)
+    # 新增：损失与优化器参数
+    parser.add_argument('--recon_loss', choices=['l1', 'huber'], default='l1', help='reconstruction loss type', required=False)
+    parser.add_argument('--huber_beta', type=float, default=0.1, help='beta for smooth L1 (Huber)', required=False)
+    parser.add_argument('--l1_weight', type=float, default=1.0, help='weight for reconstruction loss', required=False)
+    parser.add_argument('--weight_decay', type=float, default=1e-4, help='AdamW weight decay', required=False)
+    parser.add_argument('--lr_backbone', type=float, default=1e-5, help='lr for backbone', required=False)
+    parser.add_argument('--adam_beta1', type=float, default=0.9, help='Adam beta1', required=False)
+    parser.add_argument('--adam_beta2', type=float, default=0.999, help='Adam beta2', required=False)
 
     main(vars(parser.parse_args()))

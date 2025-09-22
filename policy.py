@@ -13,7 +13,12 @@ class ACTPolicy(nn.Module):
         self.model = model # CVAE decoder
         self.optimizer = optimizer
         self.kl_weight = args_override['kl_weight']
-        print(f'KL Weight {self.kl_weight}')
+        # 新增：重建损失配置
+        self.recon_loss = args_override.get('recon_loss', 'l1')  # 'l1' | 'huber'
+        self.huber_beta = args_override.get('huber_beta', 0.1)
+        self.l1_weight = args_override.get('l1_weight', 1.0)
+        print(f'KL Weight {self.kl_weight}, Recon Loss {self.recon_loss}, '
+              f'Huber beta {self.huber_beta}, Recon Weight {self.l1_weight}')
 
     def __call__(self, qpos, image, actions=None, is_pad=None):
         env_state = None
@@ -26,12 +31,26 @@ class ACTPolicy(nn.Module):
 
             a_hat, is_pad_hat, (mu, logvar) = self.model(qpos, image, env_state, actions, is_pad)
             total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar)
+
             loss_dict = dict()
-            all_l1 = F.l1_loss(actions, a_hat, reduction='none')
-            l1 = (all_l1 * ~is_pad.unsqueeze(-1)).mean()
-            loss_dict['l1'] = l1
+            # 新增：可切换的重建损失
+            if self.recon_loss == 'l1':
+                all_rec = F.l1_loss(actions, a_hat, reduction='none')
+            elif self.recon_loss in ('huber', 'smooth_l1'):
+                all_rec = F.smooth_l1_loss(actions, a_hat, reduction='none', beta=self.huber_beta)
+            else:
+                raise ValueError(f'Unsupported recon_loss {self.recon_loss}')
+
+            rec = (all_rec * ~is_pad.unsqueeze(-1)).mean()
+            loss_dict['recon'] = rec
+            if self.recon_loss == 'l1':
+                loss_dict['l1'] = rec
+            else:
+                loss_dict['huber'] = rec
+
             loss_dict['kl'] = total_kld[0]
-            loss_dict['loss'] = loss_dict['l1'] + loss_dict['kl'] * self.kl_weight
+            # 新增：加入重建损失权重
+            loss_dict['loss'] = self.l1_weight * loss_dict['recon'] + self.kl_weight * loss_dict['kl']
             return loss_dict
         else: # inference time
             a_hat, _, (_, _) = self.model(qpos, image, env_state) # no action, sample from prior

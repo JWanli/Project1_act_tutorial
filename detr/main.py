@@ -15,6 +15,9 @@ def get_args_parser():
     parser.add_argument('--lr_backbone', default=1e-5, type=float) # will be overridden
     parser.add_argument('--batch_size', default=2, type=int) # not used
     parser.add_argument('--weight_decay', default=1e-4, type=float)
+    # 新增：Adam betas
+    parser.add_argument('--adam_beta1', default=0.9, type=float)
+    parser.add_argument('--adam_beta2', default=0.999, type=float)
     parser.add_argument('--epochs', default=300, type=int) # not used
     parser.add_argument('--lr_drop', default=200, type=int) # not used
     parser.add_argument('--clip_max_norm', default=0.1, type=float, # not used
@@ -26,7 +29,8 @@ def get_args_parser():
                         help="Name of the convolutional backbone to use")
     parser.add_argument('--dilation', action='store_true',
                         help="If true, we replace stride with dilation in the last convolutional block (DC5)")
-    parser.add_argument('--position_embedding', default='sine', type=str, choices=('sine', 'learned'),
+    parser.add_argument('--position_embedding', default=
+                        'sine', type=str, choices=('sine', 'learned'),
                         help="Type of positional embedding to use on top of the image features")
     parser.add_argument('--camera_names', default=[], type=list, # will be overridden
                         help="A list of camera names")
@@ -69,7 +73,8 @@ def get_args_parser():
 
 def build_ACT_model_and_optimizer(args_override):
     parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
+    # Do not fail on unknown CLI flags coming from imitate_episodes.py
+    args, _ = parser.parse_known_args()
 
     for k, v in args_override.items():
         setattr(args, k, v)
@@ -84,15 +89,18 @@ def build_ACT_model_and_optimizer(args_override):
             "lr": args.lr_backbone,
         },
     ]
-    optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
-                                  weight_decay=args.weight_decay)
+    optimizer = torch.optim.AdamW(
+        param_dicts, lr=args.lr,
+        weight_decay=args.weight_decay,
+        betas=(args.adam_beta1, args.adam_beta2),
+    )
 
     return model, optimizer
 
 
 def build_CNNMLP_model_and_optimizer(args_override):
     parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     for k, v in args_override.items():
         setattr(args, k, v)
@@ -107,8 +115,11 @@ def build_CNNMLP_model_and_optimizer(args_override):
             "lr": args.lr_backbone,
         },
     ]
-    optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
-                                  weight_decay=args.weight_decay)
+    optimizer = torch.optim.AdamW(
+        param_dicts, lr=args.lr,
+        weight_decay=args.weight_decay,
+        betas=(args.adam_beta1, args.adam_beta2),
+    )
 
     return model, optimizer
 
